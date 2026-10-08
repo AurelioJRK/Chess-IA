@@ -1,4 +1,5 @@
 import chess
+import IA
 
 tabuleiro = chess.Board()
 
@@ -44,11 +45,10 @@ while not tabuleiro.is_game_over():
 
     print("     a     b     c     d     e     f     g     h")
 
-    print("\nTurno:", "Brancas" if tabuleiro.turn else "Pretas")
+    if tabuleiro.turn == chess.WHITE:
 
-    movimento = input("Digite o movimento (ex: e2e4): ")
+        movimento = input("Sua jogada: ")
 
-    try:
         jogada = chess.Move.from_uci(movimento)
 
         if jogada in tabuleiro.legal_moves:
@@ -56,8 +56,15 @@ while not tabuleiro.is_game_over():
         else:
             print("Movimento ilegal!")
 
-    except ValueError:
-        print("Movimento invalido!")
+    else:
+
+        print("Vez da IA (Pretas)")
+
+        jogada = IA.melhor_jogada(tabuleiro, 2)
+
+        tabuleiro.push(jogada)
+
+        print("IA jogou:", jogada)
 
 print("\nJogo terminado!")
 
