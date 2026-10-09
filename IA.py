@@ -1,141 +1,191 @@
 import chess
 import math
 
-# Define o valor de cada tipo de peça do xadrez
-def valor_peca(peca):
+
+def valor_peca(peca): # Retorna o valor da peça com base no seu tipo
     valores = {
-        chess.PAWN: 1,       
-        chess.KNIGHT: 3,     
-        chess.BISHOP: 3,     
-        chess.ROOK: 5,       
-        chess.QUEEN: 9,      
-        chess.KING: 100      
+        chess.PAWN: 1,
+        chess.KNIGHT: 3,
+        chess.BISHOP: 3,
+        chess.ROOK: 5,
+        chess.QUEEN: 9,
+        chess.KING: 100
     }
 
-    # Retorna o valor correspondente ao tipo da peça
+
     return valores[peca.piece_type]
 
+VALOR_PENALIDADE_REPETICAO = 0.3
+valor_mate = 10000  # Valor para checkmate
 
-# Avalia o estado atual do tabuleiro
-def avaliar_tabuleiro(tabuleiro):
-    # Começa com uma pontuação neutra
+def avaliar_tabuleiro(tabuleiro): # Avalia o tabuleiro e retorna um valor numérico representando a vantagem de um jogador sobre o outro
+    if tabuleiro.is_checkmate():
+        if tabuleiro.turn == chess.WHITE:
+            return -valor_mate
+        return valor_mate
+
+    if tabuleiro.is_game_over():
+        return 0
+
     valor = 0
 
-    # Percorre todas as peças que estão no tabuleiro
-    for peca in tabuleiro.piece_map().values():
+    for casa, peca in tabuleiro.piece_map().items():
+        pontos = valor_peca(peca)
 
-        # Se a peça for branca, seu valor é somado
+        coluna = chess.square_file(casa)
+        linha = chess.square_rank(casa)
+
+        centro = 3.5 - (
+            abs(coluna - 3.5) + abs(linha - 3.5)
+        ) / 2
+
+        if peca.piece_type == chess.PAWN:
+            pontos += max(0, centro) * 0.12
+
+            if peca.color == chess.WHITE:
+                pontos += linha * 0.08
+            else:
+                pontos += (7 - linha) * 0.08
+
+        elif peca.piece_type == chess.KNIGHT:
+            pontos += centro * 0.25
+
+        elif peca.piece_type == chess.BISHOP:
+            pontos += centro * 0.12
+
+        elif peca.piece_type == chess.QUEEN:
+            pontos += centro * 0.04
+
+        if peca.piece_type in (chess.KNIGHT, chess.BISHOP):
+            if peca.color == chess.WHITE:
+                casas_iniciais = (
+                    [chess.B1, chess.G1]
+                    if peca.piece_type == chess.KNIGHT
+                    else [chess.C1, chess.F1]
+                )
+            else:
+                casas_iniciais = (
+                    [chess.B8, chess.G8]
+                    if peca.piece_type == chess.KNIGHT
+                    else [chess.C8, chess.F8]
+                )
+
+            if casa not in casas_iniciais:
+                pontos += 0.25
+
+        if peca.piece_type == chess.KING:
+            casas_roque = (
+                [chess.G1, chess.C1]
+                if peca.color == chess.WHITE
+                else [chess.G8, chess.C8]
+            )
+
+            if casa in casas_roque:
+                pontos += 1.5
+
         if peca.color == chess.WHITE:
-            valor += valor_peca(peca)
-
-        # Se a peça for preta, seu valor é subtraído
+            valor += pontos
         else:
-            valor -= valor_peca(peca)
+            valor -= pontos
 
-    # Retorna a avaliação final do tabuleiro
-    # Valor positivo = vantagem das brancas
-    # Valor negativo = vantagem das pretas
     return valor
 
+def penalidade_repeticao(tabuleiro, movimento): # Aplica uma penalidade para movimentos repetidos, desestimulando a IA a repetir jogadas
+    if len(tabuleiro.move_stack) < 2:
+        return 0
 
-# Algoritmo Minimax usado para procurar a melhor jogada
-def minimax(tabuleiro, profundidade, maximizando):
+    movimento_anterior = tabuleiro.move_stack[-2]
 
-    # Para a busca quando chega ao limite de profundidade
-    # ou quando o jogo termina
+    if (
+        movimento.from_square == movimento_anterior.to_square
+        and movimento.to_square == movimento_anterior.from_square
+    ):
+        return (
+            -VALOR_PENALIDADE_REPETICAO
+            if tabuleiro.turn == chess.WHITE
+            else VALOR_PENALIDADE_REPETICAO
+        )
+
+    return 0
+
+def minimax(tabuleiro, profundidade, maximizando): # Implementa o algoritmo Minimax para encontrar a melhor jogada possível para a IA
     if profundidade == 0 or tabuleiro.is_game_over():
         return avaliar_tabuleiro(tabuleiro)
 
-    # Quando o jogador está tentando maximizar a pontuação
     if maximizando:
-
-        # Começa com o menor valor possível
         melhor_valor = -math.inf
 
-        # Testa todos os movimentos possíveis
         for movimento in tabuleiro.legal_moves:
-
-            # Faz o movimento temporariamente
+            penalidade = penalidade_repeticao(tabuleiro, movimento)
             tabuleiro.push(movimento)
 
-            # Continua procurando a melhor jogada
-            # diminuindo a profundidade
             valor = minimax(
                 tabuleiro,
                 profundidade - 1,
                 False
             )
 
-            # Desfaz o movimento para testar outro
             tabuleiro.pop()
 
-            # Guarda o maior valor encontrado
+            valor += penalidade
             melhor_valor = max(melhor_valor, valor)
 
-        # Retorna a melhor avaliação encontrada
         return melhor_valor
 
-    # Quando o jogador está tentando minimizar a pontuação
     else:
-
-        # Começa com o maior valor possível
         melhor_valor = math.inf
 
-        # Testa todos os movimentos possíveis
         for movimento in tabuleiro.legal_moves:
-
-            # Faz o movimento temporariamente
+            penalidade = penalidade_repeticao(tabuleiro, movimento)
             tabuleiro.push(movimento)
 
-            # Continua a busca
-            # Agora o próximo jogador será o maximizador
             valor = minimax(
                 tabuleiro,
                 profundidade - 1,
                 True
             )
 
-            # Desfaz o movimento
             tabuleiro.pop()
 
-            # Guarda o menor valor encontrado
+            valor += penalidade
             melhor_valor = min(melhor_valor, valor)
 
-        # Retorna a pior avaliação para o maximizador
         return melhor_valor
 
 
-# Procura qual é a melhor jogada disponível
-def melhor_jogada(tabuleiro, profundidade):
-
-    # Ainda não temos uma jogada escolhida
+def melhor_jogada(tabuleiro, profundidade): # Encontra a melhor jogada possível para a IA usando o algoritmo Minimax
     melhor_movimento = None
 
-    # Começa com o menor valor possível
-    melhor_valor = -math.inf
+    maximizando = tabuleiro.turn == chess.WHITE
 
-    # Percorre todos os movimentos legais
+    melhor_valor = (
+        -math.inf if maximizando else math.inf
+    )
+
     for movimento in tabuleiro.legal_moves:
+        penalidade = penalidade_repeticao(
+            tabuleiro,
+            movimento
+        )
 
-        # Faz o movimento temporariamente
         tabuleiro.push(movimento)
 
-        # Avalia o resultado desse movimento
-        # A profundidade é diminuída porque uma jogada já foi feita
         valor = minimax(
             tabuleiro,
             profundidade - 1,
-            False
+            not maximizando
         )
 
-        # Desfaz o movimento para testar o próximo
         tabuleiro.pop()
 
-        # Se esse movimento for melhor que o anterior,
-        # ele passa a ser a melhor jogada encontrada
-        if valor > melhor_valor:
+        valor += penalidade
+
+        if maximizando and valor > melhor_valor:
             melhor_valor = valor
             melhor_movimento = movimento
 
-    # Retorna a melhor jogada encontrada pela IA
+        elif not maximizando and valor < melhor_valor:
+            melhor_valor = valor
+            melhor_movimento = movimento
+
     return melhor_movimento

@@ -1,6 +1,5 @@
 import csv
 import os
-import uuid
 import pandas as pd
 
 pasta = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dados")
@@ -40,6 +39,7 @@ colunas_desempenho = [
 ]
 
 def criar_arquivo(caminho, colunas): # Cria o arquivo CSV se ele não existir
+
     os.makedirs(pasta, exist_ok=True)
 
     if not os.path.exists(caminho):
@@ -49,13 +49,36 @@ def criar_arquivo(caminho, colunas): # Cria o arquivo CSV se ele não existir
             encoding="utf-8"
         )
 
+def gerar_id_partida(): # Gera um novo ID de partida com base no último ID registrado no arquivo CSV de partidas
+    criar_arquivo(arquivo_partidas, colunas_partidas)
+
+    partidas = pd.read_csv(
+        arquivo_partidas,
+        dtype=str
+    )
+
+    if partidas.empty:
+        return "00001"
+
+    ids = pd.to_numeric(
+        partidas["partida_id"],
+        errors="coerce"
+    ).dropna()
+
+    if ids.empty:
+        return "00001"
+
+    proximo_id = int(ids.max()) + 1
+
+    return str(proximo_id).zfill(5)
+
 def iniciar_partida(modo, brancas, pretas, versao_brancas, versao_pretas):  # Inicia uma nova partida e retorna o ID da partida
 
     criar_arquivo(arquivo_partidas, colunas_partidas)
     criar_arquivo(arquivo_movimentos, colunas_movimentos)
     criar_arquivo(arquivo_desempenho, colunas_desempenho)
 
-    partida_id = str(uuid.uuid4())
+    partida_id = gerar_id_partida()
 
     nova_partida = pd.DataFrame([{
         "partida_id": partida_id,
