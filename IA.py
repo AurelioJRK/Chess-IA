@@ -1,7 +1,6 @@
 import chess
 import math
 
-
 def valor_peca(peca): # Retorna o valor da peça com base no seu tipo
     valores = {
         chess.PAWN: 1,
@@ -151,7 +150,6 @@ def minimax(tabuleiro, profundidade, maximizando): # Implementa o algoritmo Mini
             melhor_valor = min(melhor_valor, valor)
 
         return melhor_valor
-
 
 def melhor_jogada(tabuleiro, profundidade): # Encontra a melhor jogada possível para a IA usando o algoritmo Minimax
     melhor_movimento = None

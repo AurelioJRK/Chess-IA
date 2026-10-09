@@ -60,6 +60,34 @@ while True:
             movimento = input("Sua jogada (ex.: e2e4): ").strip()
 
             try:
+                if len(movimento) != 4:
+                    origem = chess.parse_square(movimento[:2])
+                    destino = chess.parse_square(movimento[2:4])
+
+                    peca = tabuleiro.piece_at(origem)
+
+                    if peca and peca.piece_type == chess.PAWN and (
+                        (peca.color == chess.WHITE and destino >= chess.A8) or
+                        (peca.color == chess.BLACK and destino <= chess.H1)
+                    ):
+                        promocao = input(
+                            "Escolha a peça para promoção (R, T, B, C): "
+                        ).strip().lower()
+
+                        if promocao == "r":
+                            movimento = chess.Move(origem, destino, promotion=chess.QUEEN)
+                        elif promocao == "t":
+                            movimento = chess.Move(origem, destino, promotion=chess.ROOK)
+                        elif promocao == "b":
+                            movimento = chess.Move(origem, destino, promotion=chess.BISHOP)
+                        elif promocao == "c":
+                            movimento = chess.Move(origem, destino, promotion=chess.KNIGHT)
+                        else:
+                            print("Peça inválida para promoção!")
+                            continue
+
+                        movimento += promocao
+                        
                 jogada = chess.Move.from_uci(movimento)
 
                 if jogada in tabuleiro.legal_moves:
@@ -81,22 +109,33 @@ while True:
         else:
             print("Vez da IA (Pretas)")
 
-            jogada = IA.melhor_jogada(tabuleiro, 3)  # A profundidade de busca pode ser ajustada conforme necessário
+            print("Seu rei está em xeque:", tabuleiro.is_check())
+            print("A IA consegue dar xeque-mate em uma jogada?")
 
-            if jogada is None:
-                break
+            for movimento in tabuleiro.legal_moves:
+                tabuleiro.push(movimento)
 
-            print("IA jogou:", tabuleiro.uci(jogada))
+                if tabuleiro.is_checkmate():
+                    print("Mate encontrado:", movimento)
 
-            dados.registrar_movimento(
-                partida_id,
-                tabuleiro,
-                jogada,
-                jogador="IA",
-                versao_ia=versao_ia
-            )
+        tabuleiro.pop()
 
-            tabuleiro.push(jogada)
+        jogada = IA.melhor_jogada(tabuleiro, 3)  # A profundidade de busca pode ser ajustada conforme necessário
+
+        if jogada is None:
+            break
+
+        print("IA jogou:", tabuleiro.uci(jogada))
+
+        dados.registrar_movimento(
+            partida_id,
+            tabuleiro,
+            jogada,
+            jogador="IA",
+            versao_ia=versao_ia
+        )
+
+        tabuleiro.push(jogada)
 
     print("\nJogo terminado!")
 
