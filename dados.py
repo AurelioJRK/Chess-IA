@@ -136,8 +136,6 @@ def registrar_movimento(  # Registra um movimento no arquivo CSV de movimentos
         encoding="utf-8"
     )
 
-    novo_movimento.to_csv(arquivo_movimentos, mode="a", header=False, index=False)
-
 def finalizar_partida(partida_id, tabuleiro):  # Finaliza a partida e registra o resultado no arquivo CSV de partidas e desempenho
     criar_arquivo(arquivo_partidas, colunas_partidas)
     criar_arquivo(arquivo_desempenho, colunas_desempenho)
