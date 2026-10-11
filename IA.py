@@ -8,9 +8,9 @@ def valor_peca(peca): # Retorna o valor da peça com base no seu tipo
         chess.BISHOP: 3,
         chess.ROOK: 5,
         chess.QUEEN: 9,
-        chess.KING: 100
+        chess.KING: 0
     }
-
+ 
 
     return valores[peca.piece_type]
 
@@ -152,6 +152,7 @@ def minimax(tabuleiro, profundidade, maximizando): # Implementa o algoritmo Mini
         return melhor_valor
 
 def melhor_jogada(tabuleiro, profundidade): # Encontra a melhor jogada possível para a IA usando o algoritmo Minimax
+
     melhor_movimento = None
 
     maximizando = tabuleiro.turn == chess.WHITE
