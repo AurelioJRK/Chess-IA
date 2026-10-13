@@ -4,7 +4,7 @@ import dados
 
 versao_ia = "IA_v1"
 
-simbolos = {
+simbolos = { #muda a letra dos símbolos para exibição
     "p": "♙",
     "n": "♘",
     "b": "♗",
@@ -17,6 +17,13 @@ simbolos = {
     "R": "♜",
     "Q": "♛",
     "K": "♚"
+}
+
+pecas_esp = { #muda a letra das peças para a promoção
+    "n": "c",
+    "b": "b",
+    "r": "t",
+    "q": "r",
 }
 
 
@@ -66,6 +73,7 @@ while True:
 
                     peca = tabuleiro.piece_at(origem)
 
+
                     if (
                         peca
                         and peca.piece_type == chess.PAWN
@@ -75,7 +83,7 @@ while True:
                             "Promover para dama, torre, bispo ou cavalo? (r/t/b/c): "
                         ).strip().lower()
 
-                        if promocao not in ("r", "t", "b", "c"):
+                        if promocao not in pecas_esp:
                             print("Peça inválida para promoção!")
                             continue
 

@@ -223,7 +223,6 @@ def finalizar_partida(partida_id, tabuleiro):  # Finaliza a partida e registra o
             encoding="utf-8"
         )
 
-
 def resumo_desempenho(): # Retorna um resumo do desempenho das IAs em todas as partidas
     criar_arquivo(arquivo_desempenho, colunas_desempenho)
 
