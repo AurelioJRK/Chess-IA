@@ -1,7 +1,8 @@
 import chess
 import IA
 import dados
-import tabuleiro as tb
+import tabuleiro  as tb
+import time
 
 pecas_promo = { # Mapeamento das peças de promoção
     "r": "t",
@@ -62,6 +63,23 @@ def jogada_humana(posicao): # Solicita ao jogador humano que insira uma jogada e
         return None
 
 def jogar(modo): # Função principal para jogar uma partida de xadrez, seja contra a IA ou entre duas IAs
+
+    tempo_espera = 1  # Tempo de espera entre os movimentos da IA (em segundos)
+
+    if modo == "IA vs IA":
+        while True:
+            try:
+                tempo_espera = float(input("Digite o tempo de espera entre os movimentos da IA (ex: 1.5): "))
+
+                if tempo_espera >= 0:
+                    break
+
+                print("O tempo de espera deve ser um número não negativo. Tente novamente.")
+
+            except ValueError:
+                print("Entrada inválida. Certifique-se de digitar um número válido (ex: 1.5).")
+
+
     posicao = chess.Board()
 
     if modo == "humano vs IA":
@@ -127,6 +145,8 @@ def jogar(modo): # Função principal para jogar uma partida de xadrez, seja con
 
         posicao.push(jogada)
         total_jogadas += 1
+        if modo == "IA vs IA":
+            time.sleep(tempo_espera)
 
     tb.mostrar_tabuleiro(posicao)
     print("\nPartida encerrada.")
