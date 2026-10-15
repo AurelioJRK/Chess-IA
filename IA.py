@@ -1,6 +1,11 @@
 import chess
 import math
 
+versao_IA = "MM1v2"  # Versão da IA que você deseja usar (por enquanto muda somente o nome no banco de dados)
+versao_IA2 = "MM2v2"  # Versão da IA que você deseja usar (por enquanto muda somente o nome no banco de dados)
+profundidade_IA = 2  # Profundidade de busca da IA (Quantidade de movimentos à frente que a IA irá considerar,
+#quanto maior o numero mais pesado sera o processamento
+
 def valor_peca(peca): # Retorna o valor da peça com base no seu tipo
     valores = {
         chess.PAWN: 1,

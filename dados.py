@@ -1,6 +1,8 @@
 import csv
 import os
 import pandas as pd
+from IA import versao_IA, versao_IA2
+
 
 pasta = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dados")
 arquivo_partidas = os.path.join(pasta, "partidas.csv")
@@ -101,7 +103,7 @@ def registrar_movimento(  # Registra um movimento no arquivo CSV de movimentos
     tabuleiro,
     jogada,
     jogador,
-    versao_ia=""
+    versao
 ):
     criar_arquivo(arquivo_movimentos, colunas_movimentos)
 
@@ -121,7 +123,7 @@ def registrar_movimento(  # Registra um movimento no arquivo CSV de movimentos
         "numero_jogada": numero_jogada,
         "jogador": jogador,
         "cor": cor,
-        "versao_ia": versao_ia,
+        "versao_ia": versao_IA,
         "movimento_uci": jogada.uci(),
         "movimento_san": movimento_san,
         "fen_antes": fen_antes,
@@ -144,7 +146,7 @@ def finalizar_partida(partida_id, tabuleiro):  # Finaliza a partida e registra o
         raise ValueError("A partida ainda não terminou.")
 
     partidas = pd.read_csv(
-        ARQUIVO_PARTIDAS,
+        arquivo_partidas,
         dtype=str
     ).fillna("")
 
@@ -177,7 +179,7 @@ def finalizar_partida(partida_id, tabuleiro):  # Finaliza a partida e registra o
 
     partidas.loc[i, "resultado"] = resultado
     partidas.loc[i, "motivo"] = motivo
-    partidas.loc[i, "total_jogadas"] = len(tabuleiro.move_stack)
+    partidas.loc[i, "total_jogadas"] = str(len(tabuleiro.move_stack))
 
     partidas.to_csv(
         arquivo_partidas,

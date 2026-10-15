@@ -1,160 +1,175 @@
 import chess
 import IA
 import dados
+import tabuleiro as tb
 
-versao_ia = "IA_v1"
-
-simbolos = { #muda a letra dos símbolos para exibição
-    "p": "♙",
-    "n": "♘",
-    "b": "♗",
-    "r": "♖",
-    "q": "♕",
-    "k": "♔",
-    "P": "♟",
-    "N": "♞",
-    "B": "♝",
-    "R": "♜",
-    "Q": "♛",
-    "K": "♚"
-}
-
-pecas_esp = { #muda a letra das peças para a promoção
+pecas_promo = { # Mapeamento das peças de promoção
+    "r": "t",
     "n": "c",
     "b": "b",
-    "r": "t",
     "q": "r",
 }
 
+def jogada_humana(posicao): # Solicita ao jogador humano que insira uma jogada e valida se é legal
+    movimento = input(f"Digite sua jogada (ex: e2e4): ").strip().lower()
 
-while True:
-    tabuleiro = chess.Board()
+    try:
+        if len(movimento) not in (4, 5):
+            print("Movimento inválido. Certifique-se de digitar no formato correto (ex: e2e4).")
+            return None
+
+        origem = chess.parse_square(movimento[:2])
+        destino = chess.parse_square(movimento[2:4])
+        peca = posicao.piece_at(origem)
+
+        if (peca is None) or (peca.piece_type == chess.PAWN and chess.square_rank(destino) in [0, 7]):
+
+            promocao_legal = [ #verifica se a promoção é legal
+                jogada for jogada in posicao.legal_moves
+                if jogada.from_square == origem and jogada.to_square == destino and jogada.promotion is not None
+            ]
+            if not promocao_legal:
+                print("Movimento inválido. Promoção não permitida para essa jogada.")
+                return None
+
+            if len(movimento) == 4:
+                promocao = input("promover para torre, cavalo, bispo ou rainha? (t, c, b, r): ").strip().lower()
+
+                if promocao not in pecas_promo:
+                    print("Peça de promoção inválida.")
+                    return None
+
+                movimento += pecas_promo[promocao]
+
+            else:
+                promocao = movimento[4]
+
+                if promocao not in pecas_promo:
+                    print("Peça de promoção inválida.")
+                    return None
+
+            movimento = movimento[:4] + pecas_promo[promocao]
+        jogada = chess.Move.from_uci(movimento)
+
+        if jogada not in posicao.legal_moves:
+            print("Movimento inválido.")
+            return None
+
+        return jogada
+
+    except ValueError:
+        print("formato inválido. Certifique-se de digitar no formato correto (ex: e2e4).")
+        return None
+
+def jogar(modo): # Função principal para jogar uma partida de xadrez, seja contra a IA ou entre duas IAs
+    posicao = chess.Board()
+
+    if modo == "humano vs IA":
+        brancas = "humano"
+        pretas = "IA"
+        versao_brancas = "Humano"
+        versao_pretas = IA.versao_IA
+
+    else:
+        brancas = "IA"
+        pretas = "IA"
+        versao_brancas = IA.versao_IA
+        versao_pretas = IA.versao_IA2
 
     partida_id = dados.iniciar_partida(
-        modo="humano_vs_ia",
-        brancas="humano",
-        pretas="IA",
-        versao_brancas="humano",
-        versao_pretas=versao_ia
+        modo=modo,
+        brancas=brancas,
+        pretas=pretas,
+        versao_brancas=versao_brancas,
+        versao_pretas=versao_pretas
     )
 
-    while not tabuleiro.is_game_over(claim_draw=True):
+    total_jogadas = 0
+    limite_jogadas = 200  # Limite de jogadas para evitar partidas muito longas
+    interrompida= False
 
-        print("\n")
-        print("     a     b     c     d     e     f     g     h")
-        print("   +" + "-----+" * 8)
+    while not posicao.is_game_over(claim_draw = True):
 
-        for linha in range(8, 0, -1):
-            print(f" {linha} |", end="")
+        if total_jogadas >= limite_jogadas:
+            print("Limite de jogadas atingido. A partida será encerrada.")
+            interrompida = True
+            break
 
-            for coluna in range(8):
-                casa = chess.square(coluna, linha - 1)
-                peca = tabuleiro.piece_at(casa)
+        tb.mostrar_tabuleiro(posicao)
 
-                if peca:
-                    simbolo = simbolos[peca.symbol()]
-                else:
-                    simbolo = " "
+        if posicao.turn == chess.WHITE:  # Vez das brancas
+            jogador = brancas
+            versao = versao_brancas
+            cor = "brancas"
+        else:  # Vez das pretas
+            jogador = pretas
+            versao = versao_pretas
+            cor = "pretas"
 
-                print(f"  {simbolo}  |", end="")
+        print(f"\n Vez das {cor}: {jogador}")
 
-            print(f" {linha}")
-            print("   +" + "-----+" * 8)
-
-        print("     a     b     c     d     e     f     g     h")
-
-        if tabuleiro.turn == chess.WHITE:
-            movimento = input("Sua jogada (ex.: e2e4): ").strip().lower()
-
-            try:
-                if len(movimento) == 4:
-                    origem = chess.parse_square(movimento[:2])
-                    destino = chess.parse_square(movimento[2:4])
-
-                    peca = tabuleiro.piece_at(origem)
-
-
-                    if (
-                        peca
-                        and peca.piece_type == chess.PAWN
-                        and chess.square_rank(destino) in (0, 7)
-                    ):
-                        promocao = input(
-                            "Promover para dama, torre, bispo ou cavalo? (r/t/b/c): "
-                        ).strip().lower()
-
-                        if promocao not in pecas_esp:
-                            print("Peça inválida para promoção!")
-                            continue
-
-                        movimento += promocao
-
-                jogada = chess.Move.from_uci(movimento)
-
-                if jogada in tabuleiro.legal_moves:
-                    dados.registrar_movimento(
-                        partida_id,
-                        tabuleiro,
-                        jogada,
-                        jogador="humano"
-                    )
-
-                    tabuleiro.push(jogada)
-
-                else:
-                    print("Movimento ilegal!")
-
-            except ValueError:
-                print("Formato inválido! Digite no formato e2e4.")
-
-
-        else:
-            print("Vez da IA (Pretas)")
-
-            print("Seu rei está em xeque:", tabuleiro.is_check())
-
-            jogada = IA.melhor_jogada(tabuleiro, 3)
+        if jogador == "humano":
+            jogada = jogada_humana(posicao)
 
             if jogada is None:
+                print("Movimento inválido. Tente novamente.")
+                continue
+
+        else:
+            jogada = IA.melhor_jogada(posicao, IA.profundidade_IA)
+
+            if jogada is None or jogada not in posicao.legal_moves:
+                print("A IA não conseguiu encontrar uma jogada válida. A partida será encerrada.")
+                interrompida = True
                 break
 
-            if jogada not in tabuleiro.legal_moves:
-                print("Erro: a IA escolheu uma jogada ilegal:", jogada)
-                print("Posição atual do tabuleiro:")
-                print(tabuleiro)
-                break
+            print(f"IA jogou: {posicao.uci(jogada)}")
 
-            print("IA jogou:", jogada.uci())
+        posicao.push(jogada)
+        total_jogadas += 1
 
-            dados.registrar_movimento(
-                partida_id,
-                tabuleiro,
-                jogada,
-                jogador="IA",
-                versao_ia=versao_ia
-            )
+    tb.mostrar_tabuleiro(posicao)
+    print("\nPartida encerrada.")
 
-            tabuleiro.push(jogada)
+    if not interrompida:
+        resultado = posicao.result(claim_draw=True)
+        if resultado == "1-0":
+            print("Brancas venceram!")
+            motivo = "checkmate" if posicao.is_checkmate() else "resignation"
+        elif resultado == "0-1":
+            print("Pretas venceram!")
+            motivo = "checkmate" if posicao.is_checkmate() else "resignation"
+        else:
+            print("Empate!")
+            motivo = "draw"
 
+        dados.finalizar_partida(partida_id, posicao)
 
-    print("\nJogo terminado!")
-
-    if tabuleiro.is_checkmate():
-        vencedor = "Brancas" if tabuleiro.turn == chess.BLACK else "Pretas"
-        print("Xeque-mate!")
-        print("Vencedor:", vencedor)
+        print(f"\n desempenho das IAs:")
+        print(dados.resumo_desempenho().to_string(index=False))
     else:
-        print("Empate!")
+        print("A partida foi interrompida antes de ser concluída. Nenhum resultado será registrado.")
 
-    dados.finalizar_partida(partida_id, tabuleiro)
+    input("\n Pressione Enter para voltar ao menu principal...")
 
-    print("\nDesempenho da IA:")
-    print(dados.resumo_desempenho().to_string(index=False))
+def menu(): # Exibe o menu principal do jogo e permite ao usuário escolher entre jogar contra a IA, assistir a uma partida entre IAs ou sair do jogo
+    while True:
+        print("\n=== Jogo de Xadrez com IA ===")
+        print("1. Humano vs IA")
+        print("2. IA vs IA")
+        print("3. Sair")
 
-    escolha = input(
-        "\nDeseja jogar novamente? (s/n): "
-    ).strip().lower()
+        escolha = input("Escolha uma opção: ")
 
-    if escolha != "s":
-        print("Obrigado por jogar!")
-        break
+        if escolha == "1":
+            jogar("humano vs IA")
+        elif escolha == "2":
+            jogar("IA vs IA")
+        elif escolha == "3":
+            print("Saindo do jogo...")
+            break
+        else:
+            print("Opção inválida. Tente novamente.")
+
+if __name__ == "__main__":
+    menu()
